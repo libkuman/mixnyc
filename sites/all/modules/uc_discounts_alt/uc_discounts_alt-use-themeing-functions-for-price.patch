@@ -1,0 +1,106 @@
+commit 4951b95d579e35aabe8f09a0ce31e49ee0945d72
+Author: Francis Whittle <francis@agileware.com.au>
+Date:   Mon Feb 25 13:58:39 2013 +1100
+
+    uc_discount: use theming functions when displaying price tables at checkout.
+
+diff --git a/uc_discounts/uc_discounts.module b/uc_discounts/uc_discounts.module
+index 4c8f61c..50b45e8 100644
+--- a/uc_discounts/uc_discounts.module
++++ b/uc_discounts/uc_discounts.module
+@@ -460,11 +460,11 @@ function uc_discounts_uc_cart_pane($items) {
+   if (!is_null($items)) {
+     $body = array(
+       '#markup' => uc_discounts_uc_cart_pane_output($items),
+-      '#prefix' => '<div id="cart-form-pane">', 
++      '#prefix' => '<div id="cart-form-pane">',
+       '#suffix' => '</div>',
+     );
+   }
+-  
++
+   $panes['uc_discounts_pane'] = array(
+     'title' => t('Discounts'),
+     'enabled' => TRUE,
+@@ -795,15 +795,14 @@ function uc_discounts_uc_checkout_pane_content($op) {
+         $product_total = $item->price * $item->qty;
+         $total += $product_total;
+         $desc = check_plain($item->title) . uc_product_get_description($item);
+-        
+-        $output .= '<tr valign="top"><td>' . $item->qty . '&times;</td><td width="100%">' . $desc
+-                   . '</td><td nowrap="nowrap">' . $product_total . '</td></tr>';
++
++        $output .= '<tr valign="top"><td class="qty">' . theme('uc_qty', array('qty' => $item->qty)) . '</td><td class="products" width="100%">' . $desc
++          . '</td><td class="price" nowrap="nowrap">' . theme('uc_price', array('price' => $product_total)) . '</td></tr>';
+       }
+-      dsm($discount_amount);
+       if ($discount_amount > 0) {
+         $final_price = $total - $discount_amount;
+-        $output .= '<tr valign="top"><td colspan="2"><strong>' . t('Discount') . ': </strong></td><td nowrap="nowrap">' . $discount_amount . '</td></tr>';
+-        $output .= '<tr valign="top"><td colspan="2"><strong>' . t('Total') . ': </strong></td><td nowrap="nowrap"><b>' . $final_price . '</b></td></tr>';
++        $output .= '<tr valign="top"><td colspan="2"><strong>' . t('Discount') . ': </strong></td><td class="price" nowrap="nowrap">' . theme('uc_price', array('price' => $discount_amount)) . '</td></tr>';
++        $output .= '<tr valign="top"><td colspan="2"><strong>' . t('Total') . ': </strong></td><td class="price" nowrap="nowrap"><b>' . theme('uc_price', array('price' => $final_price)) . '</b></td></tr>';
+       }
+       $output .= '</table>';
+       $review[] = $output;
+@@ -823,7 +822,7 @@ function theme_uc_discounts_cart_checkout_table($variables) {
+   // Set up table header.
+   $header = array(
+     array(
+-      'data' => t('Qty'),
++      'data' => theme('uc_qty_label'),
+       'class' => array('qty'),
+     ),
+     array(
+@@ -837,6 +836,8 @@ function theme_uc_discounts_cart_checkout_table($variables) {
+   );
+ 
+   // Set up table rows.
++
++
+   $contents = uc_cart_get_contents();
+   foreach ($contents as $item) {
+     $total = $item->price * $item->qty;
+@@ -846,7 +847,7 @@ function theme_uc_discounts_cart_checkout_table($variables) {
+ 
+     $rows[] = array(
+       array(
+-        'data' => t('@qty&times;', array('@qty' => $item->qty)),
++        'data' => array('#theme' => 'uc_qty', '#qty' => $item->qty),
+         'class' => array('qty'),
+       ),
+       array(
+@@ -854,7 +855,7 @@ function theme_uc_discounts_cart_checkout_table($variables) {
+         'class' => array('products'),
+       ),
+       array(
+-        'data' => $total,
++        'data' => array( '#theme' => 'uc_price', '#price' => $total),
+         'class' => array('price'),
+       ),
+     );
+@@ -867,7 +868,7 @@ function theme_uc_discounts_cart_checkout_table($variables) {
+         'align' => 'right',
+       ),
+       array(
+-        'data' => $discount_amount,
++        'data' => array('#theme' => 'uc_price', '#price' => $discount_amount),
+         'class' => array('price'),
+       ),
+     );
+@@ -877,8 +878,13 @@ function theme_uc_discounts_cart_checkout_table($variables) {
+   // Add the subtotal as the final row.
+   if ($show_subtotal) {
+     $rows[] = array(
+-      'data' => array(array(
+-          'data' => '<span id="subtotal-title">' . t('Subtotal:') . '</span> ' . $subtotal,
++      'data' => array(
++        array(
++          'data' => array(
++            '#theme' => 'uc_price',
++            '#prefix' => '<span id="subtotal-title">' . t('Subtotal:') . '</span> ',
++            '#price' => $subtotal,
++          ),
+           'colspan' => 3,
+           'class' => array('subtotal'),
+         )),

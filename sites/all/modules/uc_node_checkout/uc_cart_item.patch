@@ -1,0 +1,100 @@
+diff --git a/uc_node_checkout.module b/uc_node_checkout.module
+index 97e957c..764d32f 100644
+--- a/uc_node_checkout.module
++++ b/uc_node_checkout.module
+@@ -213,7 +213,7 @@ function uc_node_checkout_user($op, &$edit, &$user, $category = NULL) {
+       // Update the author of node checkout nodes referenced in the cart.
+       foreach (uc_cart_get_contents($user->uid, 'rebuild') as $item) {
+         // If the item has a checkout node...
+-        if ($node = $item->checkout_node) {
++        if ($node = $item->data['checkout_node']) {
+           // Update the author and save the node.
+           $node->uid = $user->uid;
+           node_save($node);
+@@ -272,9 +272,10 @@ function uc_node_checkout_form_alter(&$form, &$form_state, $form_id) {
+     }
+ 
+     // Update the item display (quantity, title, click to edit)
++    $j=0;
+     foreach ($items as $i => $item) {
+-      if (isset($item->checkout_node)) {
+-        $node = $item->checkout_node;
++      if (isset($item->data['node_checkout_nid'])) {
++        $node = node_load($item->data['node_checkout_nid']);
+ 
+         // Update the item being checked out
+         uc_node_checkout_update_content_fields($item, $node);
+@@ -288,7 +289,7 @@ function uc_node_checkout_form_alter(&$form, &$form_state, $form_id) {
+               $click = t('(click to edit)');
+             }
+             else {
+-              $title = $form['items'][$i]['title']['#markup'];
++              $title = $form['items'][$j]['title']['#markup'];
+               $click = ' - ' . l(t('edit'), 'node/' . $node->nid . '/edit', array('query' => array('destination' => 'cart')));
+             }
+ 
+@@ -301,7 +302,7 @@ function uc_node_checkout_form_alter(&$form, &$form_state, $form_id) {
+             $title = check_plain($item->title);
+           }
+ 
+-          $form['items'][$i]['title']['#markup'] = $title;
++          $form['items'][$j]['title']['#markup'] = $title;
+         }
+ 
+         // Add the node cart teaser beneath the title if necessary.
+@@ -317,18 +318,18 @@ function uc_node_checkout_form_alter(&$form, &$form_state, $form_id) {
+             $teaser = theme('uc_node_cart_teaser', array('node' => $node));
+           }
+ 
+-          $form['items'][$i]['description']['#markup'] .= $teaser;
++          $form['items'][$j]['description']['#markup'] .= $teaser;
+         }
+ 
+         // Rebuild the description from the title and options.
+-        $form['items'][$i]['desc']['#markup'] = $form['items'][$i]['title']['#markup'] . $form['items'][$i]['description']['#markup'];
++        $form['items'][$j]['desc']['#markup'] = $form['items'][$j]['title']['#markup'] . $form['items'][$j]['description']['#markup'];
+ 
+         // Seeing as the quantity is passsed in and should not be changed at this stage, disable.
+-        $form['items'][$i]['qty']['#value'] = $form['items'][$i]['qty']['#default_value'];
+-        $form['items'][$i]['qty']['#type'] = 'value';
+-        $form['items'][$i]['qty']['#theme'] = 'uc_node_checkout_restrict_cart_qty_field';
++        $form['items'][$j]['qty']['#value'] = $form['items'][$j]['qty']['#default_value'];
++        $form['items'][$j]['qty']['#type'] = 'value';
++        $form['items'][$j]['qty']['#theme'] = 'uc_node_checkout_restrict_cart_qty_field';
+       }
+-      $i++;
++      $j++;
+     }
+   }
+ 
+@@ -841,6 +842,17 @@ function uc_node_checkout_node_view($node, $view_mode, $langcode) {
+ }
+ 
+ /**
++ * Implements hook_uc_order_product_alter().
++ */
++function uc_node_checkout_uc_order_product_alter(&$product, $order) {
++  // Load the entire related node into the item array for use in display.
++  if (isset($product->data['node_checkout_nid']) &&
++    $node = node_load($product->data['node_checkout_nid'])) {
++    $product->data['checkout_node'] = $node;
++  }
++}
++
++/**
+  * Implements hook_uc_cart_item().
+  */
+ function uc_node_checkout_uc_cart_item($op, &$item) {
+@@ -1136,10 +1148,10 @@ function uc_node_checkout_load_cart_item($nid) {
+   // If the item hasn't been searched before...
+   if (!isset($items[$nid])) {
+     // Load the data from the database.
+-    $result = db_query('SELECT * FROM {uc_cart_products} WHERE data LIKE :nid', array(':nid' => '%\"node_checkout_nid\";i:' . $nid . ';%'))->fetchField();
++    $result = db_query('SELECT * FROM {uc_cart_products} WHERE data LIKE :nid', array(':nid' => '%\"node_checkout_nid\";i:' . $nid . ';%'));
+ 
+     // If a matching product was found in the DB for this node...
+-    if ($item = $result->fetch()) {
++    if ($item = $result->fetchObject()) {
+       $item->data = unserialize($item->data);
+       $items[$nid] = $item;
+     }

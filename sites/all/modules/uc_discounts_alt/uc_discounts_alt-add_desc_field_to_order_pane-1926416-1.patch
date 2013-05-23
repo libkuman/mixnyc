@@ -1,0 +1,18 @@
+commit 5e0b1881ecb101ebc734c185e61b16d6b2a0708a
+Author: Francis Whittle <francis@agileware.com.au>
+Date:   Mon Feb 25 11:16:00 2013 +1100
+
+    uc_discounts_alt: add desc field to order pane
+
+diff --git a/uc_discounts/uc_discounts.module b/uc_discounts/uc_discounts.module
+index 2bbf569..4c8f61c 100644
+--- a/uc_discounts/uc_discounts.module
++++ b/uc_discounts/uc_discounts.module
+@@ -380,6 +380,7 @@ function uc_discounts_uc_order_pane() {
+   $panes['uc_discounts'] = array(
+     'callback' => 'uc_discounts_uc_order_pane_callback',
+     'title' => t('Discount codes'),
++    'desc' => t('Pane to display discount codes.'),
+     'weight' => 8,
+     'show' => array('edit'),
+   );
