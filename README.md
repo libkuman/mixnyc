@@ -1,4 +1,4 @@
 mixnyc
 ======
 
-Code base for 
+Code base for MIXNYC's entry form drupal site
