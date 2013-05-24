@@ -140,6 +140,12 @@ function mixnyc_custom_updated_submission_status_message(&$node, &$site,
   $film_count = mixnyc_custom_get_film_count($node->uid, $node->nid, 'paid');
   $has_more_than_one_film = ($film_count > 0) ? TRUE : FALSE;
   
+  $admin_paid = isset($node->field_admin_paid) ?
+    $node->field_admin_paid['und'][0]['value'] : FALSE;
+
+  $admin_paid_amount = isset($node->field_admin_paid_amount) ?
+    $node->field_admin_paid_amount['und'][0]['value'] : FALSE;
+  
 /**
   dsm($type,'type');
   dsm($submission_type_requires_payment,'requires payment');
@@ -158,7 +164,10 @@ function mixnyc_custom_updated_submission_status_message(&$node, &$site,
   dsm($view);
   dsm($node);
   dsm($node_order);
+  dsm($admin_paid);
+  dsm($admin_paid_amount);
  */
+
 
   $ret = "";
 
@@ -203,7 +212,12 @@ function mixnyc_custom_updated_submission_status_message(&$node, &$site,
 
   //////////////////////////////////////////////////////////////////////////
   //PAYMENT
-  if ($checklist_completed && $submission_type_requires_payment && 
+  if ($admin_paid) {
+     $ret .="<li><strong>".t("Payment Status: Successful")."</strong><br/>";
+    $ret .= 
+      t("A MIX NYC volunteer has successfully registered your payment</li>"); 
+  }
+  else if ($checklist_completed && $submission_type_requires_payment && 
       $payment_type=='check' && strtolower($order_status)=='pending') {
     $ret .="<li><strong>".t("Payment Status: Awaiting Check")."</strong><br/>";
     $ret .= 
@@ -293,6 +307,8 @@ function mixnyc_custom_get_film_count($uid, $nid, $mode = 'paid') {
       ON ord.order_id = prods.order_id
     LEFT JOIN {field_data_field_checklist_completed} comp
       ON sub.vid=comp.revision_id
+    LEFT JOIN {field_data_field_admin_paid} admin_paid
+      ON sub.vid=admin_paid.revision_id
     WHERE status=1 
     AND sub.uid=$uid 
     AND sub.nid!=$nid
@@ -302,9 +318,12 @@ function mixnyc_custom_get_film_count($uid, $nid, $mode = 'paid') {
   if($mode != 'all') {
     $sql .= "
       AND comp.field_checklist_completed_value = 'YES'
-      AND LOWER(ord.order_status) !='pending'
-      AND LOWER(ord.order_status) !='abandoned'
-      AND LOWER(ord.order_status) !='canceled'
+      AND 
+        ((LOWER(ord.order_status) !='pending'
+          AND LOWER(ord.order_status) !='abandoned'
+          AND LOWER(ord.order_status) !='canceled')
+         OR
+         (admin_paid.field_admin_paid_value=1))
     ";
   }
   
