@@ -127,6 +127,20 @@ function mixnyc_custom_updated_submission_status_message(&$node, &$site,
   $film_gauges = isset($node->field_film_gauge) ? 
     count($node->field_film_gauge['und']) : 0;
 
+  //these are the term id's for the film exhibition formats
+  $film_formats = array(46, 47, 48, 49);
+
+  $formats = isset($node->field_exhibition_format) ? 
+    $node->field_exhibition_format[LANGUAGE_NONE] : array();
+
+  $is_film = FALSE;
+  foreach ($formats as $format) {
+    if (in_array($format['tid'], $film_formats)) {
+      $is_film = TRUE;
+      break;
+    }
+  }
+
   $checklist_completed = isset($node->field_checklist_completed) ?
     $node->field_checklist_completed['und'][0]['value'] : FALSE;
 
@@ -156,6 +170,7 @@ function mixnyc_custom_updated_submission_status_message(&$node, &$site,
   dsm($view_order_link,'view_order_link');
   dsm($make_payment_link,'payment_link');
   dsm($film_gauges, 'film gauges');
+  dsm($is_film, 'is film');
   dsm($film_count, 'film_count');
   dsm($has_more_than_one_film, 'more than 1 film?');
   dsm($order_status, 'order status');
@@ -260,7 +275,7 @@ function mixnyc_custom_updated_submission_status_message(&$node, &$site,
   }
   //
   else if ($checklist_completed && $submission_type_requires_payment && 
-            $film_gauges) {
+            $is_film) {
     $ret .="<li><strong>".t("Payment Status: Awaiting Payment").
       "</strong><br/>";
     $ret .=
