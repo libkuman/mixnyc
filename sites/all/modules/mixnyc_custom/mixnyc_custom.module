@@ -379,3 +379,57 @@ function computed_field_field_checklist_completed_compute(&$entity_field, $entit
   $entity_field[0]['value']= $cmptd_value;
 
 }
+
+function mixnyc_custom_node_presave($node) {
+  global $user;
+
+  if ($node->type == 'film_submission') {
+    //these are the term id's for the film exhibition formats
+    $film_formats = array(46, 47, 48, 49);
+
+    $formats = isset($node->field_exhibition_format) ? 
+      $node->field_exhibition_format[LANGUAGE_NONE] : array();
+
+    $is_film = FALSE;
+    foreach ($formats as $format) {
+      if (in_array($format['tid'], $film_formats)) {
+	$is_film = TRUE;
+	break;
+      }
+    }
+
+    $role_name = 'foreign account holder'; // Name of role to add
+
+    // Get RID of role
+    $rid = db_query("SELECT r.rid FROM {role} r WHERE r.name = :rname", 
+		    array(':rname' => $role_name))->fetchField();
+
+    if (!$is_film) {
+      $foreign_account = 
+	$node->field_will_you_be_paying_your_su[LANGUAGE_NONE][0]['value'];
+
+      if ($foreign_account) {
+	// Save the user object with the new role.
+	if (!isset($user->roles[$rid])) {
+	  $roles = $user->roles + array($rid => $role_name);
+	  user_save($user, array('roles' => $roles));
+	}
+      }
+      else {
+	if (isset($user->roles[$rid])) {
+	  $roles = $user->roles;
+	  unset($roles[$rid]);
+	  user_save($user, array('roles' => $roles));
+	}
+      }      
+    }
+    else {
+      if (isset($user->roles[$rid])) {
+	$roles = $user->roles;
+	unset($roles[$rid]);
+	user_save($user, array('roles' => $roles));
+      }
+    }      
+
+  }
+}
