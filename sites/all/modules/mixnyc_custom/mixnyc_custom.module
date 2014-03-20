@@ -219,7 +219,7 @@ function mixnyc_custom_updated_submission_status_message(&$node, &$site,
         "Please send your preview DVD and/or any supplemental materials to: 
 	<br/>
          MIX NYC<br/>
-	 ATTN: 2013 Entries<br/>
+	 ATTN: ".date('Y') ." Entries<br/>
          82 Nassau St. PMB 341<br/>
          New York, NY 10038<br/><br/></li>"; 
     }
